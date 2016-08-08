@@ -1,5 +1,5 @@
 ---
-title: "2-1 Climate Change"
+title: "Climate Change"
 author: "Datta K"
 output: html_document
 ---
