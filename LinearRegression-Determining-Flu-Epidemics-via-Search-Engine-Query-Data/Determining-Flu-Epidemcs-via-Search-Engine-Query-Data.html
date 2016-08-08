@@ -75,9 +75,11 @@ img {
 <p>ILI Data - The <a href="http://www.cdc.gov/flu/weekly/fluactivitysurv.htm">CDC</a> publishes on its website the official regional and state-level percentage of patient visits to healthcare providers for ILI purposes on a weekly basis.</p>
 <p>Google Search Queries - <a href="http://www.google.com/trends">Google Trends</a> allows public retrieval of weekly counts for every query searched by users around the world. For each location, the counts are normalized by dividing the count for each query in a particular week by the total number of online search queries submitted in that location during the week. Then, the values are adjusted to be between 0 and 1.</p>
 <p>The csv file FluTrain.csv aggregates this data from January 1, 2004 until December 31, 2011 as follows:</p>
-<p>“Week” - The range of dates represented by this observation, in year/month/day format.</p>
-<p>“ILI” - This column lists the percentage of ILI-related physician visits for the corresponding week.</p>
-<p>“Queries” - This column lists the fraction of queries that are ILI-related for the corresponding week, adjusted to be between 0 and 1 (higher values correspond to more ILI-related search queries).</p>
+<ul>
+<li>“Week” - The range of dates represented by this observation, in year/month/day format.</li>
+<li>“ILI” - This column lists the percentage of ILI-related physician visits for the corresponding week.</li>
+<li>“Queries” - This column lists the fraction of queries that are ILI-related for the corresponding week, adjusted to be between 0 and 1 (higher values correspond to more ILI-related search queries).</li>
+</ul>
 <p><strong> Before applying analytics tools on the training set, we first need to understand the data at hand. Load “FluTrain.csv” into a data frame called FluTrain. Looking at the time period 2004-2011, which week corresponds to the highest percentage of ILI-related physician visits? Select the day of the month corresponding to the start of this week. October - 18 - 2009 </strong></p>
 <pre class="r"><code>FluTrain = read.csv(&quot;FluTrain.csv&quot;)
 FluTest = read.csv(&quot;FluTest.csv&quot;)

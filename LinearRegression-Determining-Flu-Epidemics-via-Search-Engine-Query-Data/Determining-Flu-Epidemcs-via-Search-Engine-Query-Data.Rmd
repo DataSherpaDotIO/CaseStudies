@@ -21,11 +21,9 @@ Google Search Queries - [Google Trends](http://www.google.com/trends) allows pub
 
 The csv file FluTrain.csv aggregates this data from January 1, 2004 until December 31, 2011 as follows:
 
-"Week" - The range of dates represented by this observation, in year/month/day format.
-
-"ILI" - This column lists the percentage of ILI-related physician visits for the corresponding week.
-
-"Queries" - This column lists the fraction of queries that are ILI-related for the corresponding week, adjusted to be between 0 and 1 (higher values correspond to more ILI-related search queries).
+* "Week" - The range of dates represented by this observation, in year/month/day format.
+* "ILI" - This column lists the percentage of ILI-related physician visits for the corresponding week.
+* "Queries" - This column lists the fraction of queries that are ILI-related for the corresponding week, adjusted to be between 0 and 1 (higher values correspond to more ILI-related search queries).
 
 **
 Before applying analytics tools on the training set, we first need to understand the data at hand. Load "FluTrain.csv" into a data frame called FluTrain. Looking at the time period 2004-2011, which week corresponds to the highest percentage of ILI-related physician visits? Select the day of the month corresponding to the start of this week.
