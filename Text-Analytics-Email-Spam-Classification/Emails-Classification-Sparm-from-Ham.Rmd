@@ -12,8 +12,8 @@ In this problem, we will build and evaluate a spam filter using a publicly avail
 
 The dataset contains just two fields:
 
-*   text: The text of the email.
-*   spam: A binary variable indicating if the email was spam.
+* text: The text of the email.
+* spam: A binary variable indicating if the email was spam.
 
 ##  Problem 1.1 - Loading the Dataset
 
