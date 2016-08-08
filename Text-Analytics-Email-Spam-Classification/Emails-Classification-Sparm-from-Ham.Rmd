@@ -1,0 +1,739 @@
+---
+title: "Emails Classification - Spam from Ham"
+author: "Datta K"
+output: html_document
+---
+
+Nearly every email user has at some point encountered a "spam" email, which is an unsolicited message often advertising a product, containing links to malware, or attempting to scam the recipient. Roughly 80-90% of more than 100 billion emails sent each day are spam emails, most being sent from botnets of malware-infected computers. The remainder of emails are called "ham" emails.
+
+As a result of the huge number of spam emails being sent across the Internet each day, most email providers offer a spam filter that automatically flags likely spam messages and separates them from the ham. Though these filters use a number of techniques (e.g. looking up the sender in a so-called "Blackhole List" that contains IP addresses of likely spammers), most rely heavily on the analysis of the contents of an email via text analytics.
+
+In this problem, we will build and evaluate a spam filter using a publicly available dataset first described in the 2006 conference paper "Spam Filtering with Naive Bayes -- Which Naive Bayes?" by V. Metsis, I. Androutsopoulos, and G. Paliouras. The "ham" messages in this dataset come from the inbox of former Enron Managing Director for Research Vincent Kaminski, one of the inboxes in the Enron Corpus. One source of spam messages in this dataset is the SpamAssassin corpus, which contains hand-labeled spam messages contributed by Internet users. The remaining spam was collected by Project Honey Pot, a project that collects spam messages and identifies spammers by publishing email address that humans would know not to contact but that bots might target with spam. The full dataset we will use was constructed as roughly a 75/25 mix of the ham and spam messages.
+
+The dataset contains just two fields:
+
+*   text: The text of the email.
+*   spam: A binary variable indicating if the email was spam.
+
+##  Problem 1.1 - Loading the Dataset
+
+Begin by loading the dataset emails.csv into a data frame called emails. Remember to pass the stringsAsFactors=FALSE option when loading the data.
+
+**
+How many emails are in the dataset?
+5728
+**
+
+```{r}
+emails = read.csv("emails.csv", stringsAsFactors = FALSE)
+str(emails)
+```
+
+##Problem 1.2 - Loading the Dataset
+
+**
+How many of the emails are spam?
+1368
+**
+
+```{r}
+table(emails$spam)
+```
+
+##Problem 1.3 - Loading the Dataset
+
+**Which word appears at the beginning of every email in the dataset?** Respond as a lower-case word with punctuation removed.
+
+**subject**
+
+```{r}
+emails$text[1]
+emails$text[2]
+```
+
+## Problem 1.4 - Loading the Dataset
+
+**Could a spam classifier potentially benefit from including the frequency of the word that appears in every email?**
+
+No -- the word appears in every email so this variable would not help us differentiate spam from ham.
+
+**Yes -- the number of times the word appears might help us differentiate spam from ham.**
+
+Explanation
+
+We know that each email has the word "subject" appear at least once, but the frequency with which it appears might help us differentiate spam from ham. For instance, a long email chain would have the word "subject" appear a number of times, and this higher frequency might be indicative of a ham message.
+
+## Problem 1.5 - Loading the Dataset
+
+The nchar() function counts the number of characters in a piece of text. 
+**How many characters are in the longest email in the dataset (where longest is measured in terms of the maximum number of characters)?
+43952**
+
+```{r}
+max(nchar(emails$text))
+```
+
+## Problem 1.6 - Loading the Dataset
+
+**Which row contains the shortest email in the dataset?** (Just like in the previous problem, shortest is measured in terms of the fewest number of characters.)
+
+**1992**
+
+```{r}
+which.min(nchar(emails$text))
+```
+
+## Problem 2.1 - Preparing the Corpus
+
+Follow the standard steps to build and pre-process the corpus:
+
+1) Build a new corpus variable called corpus.
+
+2) Using tm_map, convert the text to lowercase.
+
+3) Using tm_map, remove all punctuation from the corpus.
+
+4) Using tm_map, remove all English stopwords from the corpus.
+
+5) Using tm_map, stem the words in the corpus.
+
+6) Build a document term matrix from the corpus, called dtm.
+
+If the code length(stopwords("english")) does not return 174 for you, then please run the line of code in this file, which will store the standard stop words in a variable called sw. When removing stop words, use tm_map(corpus, removeWords, sw) instead of tm_map(corpus, removeWords, stopwords("english")).
+
+**
+How many terms are in dtm?
+28687
+**
+
+```{r}
+library(tm)
+corpus = Corpus(VectorSource(emails$text))
+corpus = tm_map(corpus, tolower)
+corpus = tm_map(corpus, PlainTextDocument)
+corpus = tm_map(corpus, removePunctuation)
+corpus = tm_map(corpus, removeWords, stopwords("en"))
+corpus = tm_map(corpus, stemDocument)
+dtm = DocumentTermMatrix(corpus)
+dtm
+```
+
+## Problem 2.2 - Preparing the Corpus
+
+To obtain a more reasonable number of terms, limit dtm to contain terms appearing in at least 5% of documents, and store this result as spdtm. 
+
+**
+How many terms are in spdtm?
+330
+**
+
+```{r}
+spdtm = removeSparseTerms(dtm, 0.95)
+spdtm
+```
+
+## Problem 2.3 - Preparing the Corpus
+
+Build a data frame called emailsSparse from spdtm, and use the make.names function to make the variable names of emailsSparse valid.
+
+colSums() is an R function that returns the sum of values for each variable in our data frame. Our data frame contains the number of times each word stem (columns) appeared in each email (rows). Therefore, colSums(emailsSparse) returns the number of times a word stem appeared across all the emails in the dataset. 
+
+**What is the word stem that shows up most frequently across all the emails in the dataset?** Hint: think about how you can use sort() or which.max() to pick out the maximum frequency.
+**enron**
+
+```{r}
+emailsSparse = as.data.frame(as.matrix(spdtm))
+colnames(emailsSparse) = make.names(colnames(emailsSparse))
+which.max(colSums(emailsSparse))
+```
+
+## Problem 2.4 - Preparing the Corpus
+
+Add a variable called "spam" to emailsSparse containing the email spam labels. You can do this by copying over the "spam" variable from the original data frame.
+
+**How many word stems appear at least 5000 times in the ham emails in the dataset?** Hint: in this and the next question, remember not to count the dependent variable we just added.
+
+**6**
+
+```{r}
+emailsSparse$spam = emails$spam
+sort(colSums(subset(emailsSparse, emailsSparse$spam == 0)))
+```
+
+## Problem 2.5 - Preparing the Corpus
+
+**
+How many word stems appear at least 1000 times in the spam emails in the dataset?
+3
+**
+
+```{r}
+sort(colSums(subset(emailsSparse, emailsSparse$spam == 1)))
+```
+
+Explanation
+
+Note that the variable "spam" is the dependent variable and is not the frequency of a word stem. So it should not be counted.
+
+## Problem 2.6 - Preparing the Corpus
+
+**The lists of most common words are significantly different between the spam and ham emails. What does this likely imply?**
+
+* The frequencies of these most common words are unlikely to help differentiate between spam and ham.
+
+* **The frequencies of these most common words are likely to help differentiate between spam and ham.**
+
+Explanation
+
+A word stem like "enron", which is extremely common in the ham emails but does not occur in any spam message, will help us correctly identify a large number of ham messages.
+
+##Problem 2.7 - Preparing the Corpus
+
+Several of the most common word stems from the ham documents, such as "enron", "hou" (short for Houston), "vinc" (the word stem of "Vince") and "kaminski", are likely specific to Vincent Kaminski's inbox. 
+**What does this mean about the applicability of the text analytics models we will train for the spam filtering problem?**
+
+* The models we build are still very general, and are likely to perform well as a spam filter for nearly any other person.
+
+* **The models we build are personalized, and would need to be further tested before being used as a spam filter for another person.**
+
+Explanation
+
+The ham dataset is certainly personalized to Vincent Kaminski, and therefore it might not generalize well to a general email user. Caution is definitely necessary before applying the filters derived in this problem to other email users.
+
+
+## Problem 3.1 - Building machine learning models
+
+First, convert the dependent variable to a factor with "emailsSparse$spam = as.factor(emailsSparse$spam)".
+
+Next, set the random seed to 123 and use the sample.split function to split emailsSparse 70/30 into a training set called "train" and a testing set called "test". Make sure to perform this step on emailsSparse instead of emails.
+
+```{r}
+set.seed(123)
+library(caTools)
+split = sample.split(emailsSparse$spam, SplitRatio = 0.7)
+spamTrain = subset(emailsSparse, split==TRUE)
+spamTest = subset(emailsSparse, split==FALSE)
+```
+
+Using the training set, train the following three machine learning models. The models should predict the dependent variable "spam", using all other available variables as independent variables. Please be patient, as these models may take a few minutes to train.
+
+1) A logistic regression model called spamLog. 
+
+2) A CART model called spamCART, using the default parameters to train the model (don't worry about adding minbucket or cp). Remember to add the argument method="class" since this is a binary classification problem.
+
+3) A random forest model called spamRF, using the default parameters to train the model (don't worry about specifying ntree or nodesize). Directly before training the random forest model, set the random seed to 123 (even though we've already done this earlier in the problem, it's important to set the seed right before training the model so we all obtain the same results. Keep in mind though that on certain operating systems, your results might still be slightly different).
+
+```{r}
+spamLog = glm(spam ~ ., data=spamTrain, family="binomial")
+predSpamLog = predict(spamLog, type="response")
+
+library(rpart)
+library(rpart.plot)
+spamCART = rpart(spam ~ ., data=spamTrain, method="class")
+predSpamCART = predict(spamCART)[,2]
+
+library(randomForest)
+set.seed(123)
+spamRF = randomForest(spam ~ ., data=spamTrain)
+predSpamRF = predict(spamRF)
+```
+
+For each model, obtain the predicted spam probabilities for the training set. Be careful to obtain probabilities instead of predicted classes, because we will be using these values to compute training set AUC values. Recall that you can obtain probabilities for CART models by not passing any type parameter to the predict() function, and you can obtain probabilities from a random forest by adding the argument type="prob". For CART and random forest, you need to select the second column of the output of the predict() function, corresponding to the probability of a message being spam.
+
+You may have noticed that training the logistic regression model yielded the messages "algorithm did not converge" and "fitted probabilities numerically 0 or 1 occurred". Both of these messages often indicate overfitting and the first indicates particularly severe overfitting, often to the point that the training set observations are fit perfectly by the model. Let's investigate the predicted probabilities from the logistic regression model.
+
+**
+How many of the training set predicted probabilities from spamLog are less than 0.00001?
+3046
+**
+
+**
+How many of the training set predicted probabilities from spamLog are more than 0.99999?
+954
+**
+
+**
+How many of the training set predicted probabilities from spamLog are between 0.00001 and 0.99999?
+10
+**
+
+```{r}
+table(predSpamLog <0.00001)
+table(predSpamLog > 0.99999)
+table(predSpamLog >= 0.00001 & predSpamLog <= 0.99999)
+```
+
+## Problem 3.2 - Building Machine Learning Models
+
+**
+How many variables are labeled as significant (at the p=0.05 level) in the logistic regression summary output?
+0
+**
+
+```{r}
+summary(spamLog)
+```
+
+## Problem 3.3 - Building Machine Learning Models
+
+**How many of the word stems "enron", "hou", "vinc", and "kaminski" appear in the CART tree?** Recall that we suspect these word stems are specific to Vincent Kaminski and might affect the generalizability of a spam filter built with his ham data.
+**2**
+
+```{r}
+prp(spamCART)
+```
+
+Explanation
+
+From prp(spamCART), we see that "vinc" and "enron" appear in the CART tree as the top two branches, but that "hou" and "kaminski" do not appear.
+
+## Problem 3.4 - Building Machine Learning Models
+
+**
+What is the training set accuracy of spamLog, using a threshold of 0.5 for predictions?
+0.9990025
+**
+
+```{r}
+table(spamTrain$spam, predSpamLog >= 0.5)
+(3052 + 954) / (3052 + 4 + 954)
+```
+
+## Problem 3.5 - Building Machine Learning Models
+
+**
+What is the training set AUC of spamLog?
+0.9999959
+**
+
+```{r}
+library(ROCR)
+spamLogROCR = prediction(predSpamLog, spamTrain$spam)
+as.numeric(performance(spamLogROCR, "auc")@y.values)
+```
+
+## Problem 3.6 - Building Machine Learning Models
+
+**What is the training set accuracy of spamCART, using a threshold of 0.5 for predictions?** (Remember that if you used the type="class" argument when making predictions, you automatically used a threshold of 0.5. If you did not add in the type argument to the predict function, the probabilities are in the second column of the predict output.)
+**0.942394**
+
+```{r}
+table(spamTrain$spam, predSpamCART >0.5)
+(2885+894) / (2885+167+64+894)
+```
+
+## Problem 3.7 - Building Machine Learning Models
+
+**What is the training set AUC of spamCART?** (Remember that you have to pass the prediction function predicted probabilities, so don't include the type argument when making predictions for your CART model.)
+**0.9696044**
+
+```{r}
+library(ROCR)
+spamCARTROCR = prediction(predSpamCART, spamTrain$spam)
+as.numeric(performance(spamCARTROCR, "auc")@y.values)
+```
+
+## Problem 3.8 - Building Machine Learning Models
+
+**What is the training set accuracy of spamRF, using a threshold of 0.5 for predictions?** (Remember that your answer might not match ours exactly, due to random behavior in the random forest algorithm on different operating systems.)
+**0.9753117**
+
+```{r}
+table(spamTrain$spam, predSpamRF >= 0.5)
+(3008+903) / (3008+44+55+903)
+```
+
+## Problem 3.9 - Building Machine Learning Models
+
+**What is the training set AUC of spamRF?** (Remember to pass the argument type="prob" to the predict function to get predicted probabilities for a random forest model. The probabilities will be the second column of the output.)
+**0.9965921**
+
+```{r}
+library(ROCR)
+spamRFROCR = prediction(predSpamRF, spamTrain$spam)
+as.numeric(performance(spamRFROCR, "auc")@y.values)
+```
+
+## Problem 3.10 - Building Machine Learning Models
+
+**Which model had the best training set performance, in terms of accuracy and AUC?**
+
+* **Logistic regression**
+* CART
+* Random forest
+
+Explanation
+
+In terms of both accuracy and AUC, logistic regression is nearly perfect and outperforms the other two models.
+
+## Problem 4.1 - Evaluating on the Test Set
+
+Obtain predicted probabilities for the testing set for each of the models, again ensuring that probabilities instead of classes are obtained.
+
+```{r}
+predSpamTestLog = predict(spamLog, newdata=spamTest, type="response")
+predSpamTestCART = predict(spamCART, newdata=spamTest)[,2]
+predSpamTestRF = predict(spamRF, newdata=spamTest)
+```
+
+**What is the testing set accuracy of spamLog, using a threshold of 0.5 for predictions?
+0.9505239**
+
+```{r}
+table(spamTest$spam, predSpamTestLog >=0.5)
+(1257 +376) / (1257+376+51+34)
+```
+
+## Problem 4.2 - Evaluating on the Test Set
+
+**What is the testing set AUC of spamLog?
+0.9627517**
+
+```{r}
+library(ROCR)
+spamLogTestROCR = prediction(predSpamTestLog, spamTest$spam)
+as.numeric(performance(spamLogTestROCR, "auc")@y.values)
+```
+
+## Problem 4.3 - Evaluating on the Test Set
+
+**
+What is the testing set accuracy of spamCART, using a threshold of 0.5 for predictions?
+0.9394645
+**
+
+```{r}
+table(spamTest$spam, predSpamTestCART >=0.5)
+(1228+386) / (1228+80+24+386)
+```
+
+## Problem 4.4 - Evaluating on the Test Set
+
+What is the testing set AUC of spamCART?
+0.963176
+**
+
+```{r}
+library(ROCR)
+spamTestCARTROCR = prediction(predSpamTestCART, spamTest$spam)
+as.numeric(performance(spamTestCARTROCR, "auc")@y.values)
+```
+
+## Problem 4.5 - Evaluating on the Test Set
+
+**
+What is the testing set accuracy of spamRF, using a threshold of 0.5 for predictions?
+0.9743888
+**
+
+```{r}
+table(spamTest$spam, predSpamTestRF >=0.5)
+(1288+386) / (1288+20+24+386)
+```
+
+## Problem 4.6 - Evaluating on the Test Set
+
+**What is the testing set AUC of spamRF?
+0.9959256
+**
+
+```{r}
+library(ROCR)
+spamTestRFROCR = prediction(predSpamTestRF, spamTest$spam)
+as.numeric(performance(spamTestRFROCR, "auc")@y.values)
+```
+
+## Problem 4.7 - Evaluating on the Test Set
+
+**Which model had the best testing set performance, in terms of accuracy and AUC?**
+
+* Logistic regression
+* CART
+* **Random forest**
+
+Explanation
+
+The random forest outperformed logistic regression and CART in both measures, obtaining an impressive AUC of 0.997 on the test set.
+
+##Problem 4.8 - Evaluating on the Test Set
+
+**Which model demonstrated the greatest degree of overfitting?**
+
+* **Logistic regression**
+* CART
+* Random forest
+
+Explanation
+
+Both CART and random forest had very similar accuracies on the training and testing sets. However, logistic regression obtained nearly perfect accuracy and AUC on the training set and had far-from-perfect performance on the testing set. This is an indicator of overfitting.
+
+## Problem 5.1 - Assigning weights to different types of errors
+
+Thus far, we have used a threshold of 0.5 as the cutoff for predicting that an email message is spam, and we have used accuracy as one of our measures of model quality. As we have previously learned, these are good choices when we have no preference for different types of errors (false positives vs. false negatives), but other choices might be better if we assign a higher cost to one type of error.
+
+Consider the case of an email provider using the spam filter we have developed. The email provider moves all of the emails flagged as spam to a separate "Junk Email" folder, meaning those emails are not displayed in the main inbox. The emails not flagged as spam by the algorithm are displayed in the inbox. Many of this provider's email users never check the spam folder, so they will never see emails delivered there.
+
+**In this scenario, what is the cost associated with the model making a false negative error?**
+
+* A ham email will be sent to the Junk Email folder, potentially resulting in the email user never seeing that message.
+* **A spam email will be displayed in the main inbox, a nuisance for the email user.**
+* There is no cost associated with this sort of mistake.
+
+Explanation
+
+A false negative means the model labels a spam email as ham. This results in a spam email being displayed in the main inbox.
+
+Note:The model is attempting to identify spam emails. Therefore, a positive real value or predicted value is spam email, and a negative real value or predicted value is not spam email (or ham email). For this model, a false negative is "a negative value prediction (predicted as not spam), while the real (original) values is positive (is a spam email)". A spam email was not identified as spam and allowed into the users inbox annoying the user.
+
+**In this scenario, what is the cost associated with our model making a false positive error?**
+
+* **A ham email will be sent to the Junk Email folder, potentially resulting in the email user never seeing that message.**
+* A spam email will be displayed in the main inbox, a nuisance for the email user.
+* There is no cost associated with this sort of mistake.
+
+Explanation
+
+A false positive means the model labels a ham email as spam. This results in a ham email being sent to the Junk Email folder.
+
+## Problem 5.2 - Assigning Weights to Different Types of Errors
+
+**Which sort of mistake is more costly (less desirable), assuming that the user will never check the Junk Email folder?**
+
+* False negative
+* **False positive**
+* They are equally costly
+
+Explanation
+
+A false negative is largely a nuisance (the user will need to delete the unsolicited email). However a false positive can be very costly, since the user might completely miss an important email due to it being delivered to the spam folder. Therefore, the false positive is more costly.
+
+## Problem 5.3 - Assigning Weights to Different Types of Errors
+
+**What sort of user might assign a particularly high cost to a false negative result?**
+
+* A user who does not mind spam emails reaching their main inbox
+* **A user who is particularly annoyed by spam email reaching their main inbox**
+* A user who never checks their Junk Email folder
+* A user who always checks their Junk Email folder
+
+Explanation
+
+A false negative results in spam reaching a user's main inbox, which is a nuisance. A user who is particularly annoyed by such spam would assign a particularly high cost to a false negative.
+
+## Problem 5.4 - Assigning Weights to Different Types of Errors
+
+**What sort of user might assign a particularly high cost to a false positive result?**
+
+* A user who does not mind spam emails reaching his/her main inbox
+* A user who is particularly annoyed by spam email reaching his/her main inbox
+* **A user who never checks his/her Junk Email folder**
+* A user who routinely checks his/her Junk Email folder
+
+Explanation
+
+A false positive results in ham being sent to a user's Junk Email folder. While the user might catch the mistake upon checking the Junk Email folder, users who never check this folder will miss the email, incurring a particularly high cost.
+
+## Problem 5.5 - Assigning Weights to Different Types of Errors
+
+Consider another use case for the spam filter, in which messages labeled as spam are still delivered to the main inbox but are flagged as "potential spam." Therefore, there is no risk of the email user missing an email regardless of whether it is flagged as spam. 
+
+**What is the largest way in which this change in spam filter design affects the costs of false negative and false positive results?**
+
+* The cost of false negative results is decreased
+* The cost of false negative results is increased
+* **The cost of false positive results is decreased**
+* The cost of false positive results is increased
+
+Explanation
+
+While before many users would completely miss a ham email labeled as spam (false positive), now users will not miss an email after this sort of mistake. As a result, the cost of a false positive has been decreased.
+
+## Problem 5.6 - Assigning Weights to Different Types of Errors
+
+Consider a large-scale email provider with more than 100,000 customers. **Which of the following represents an approach for approximating each customer's preferences between a false positive and false negative that is both practical and personalized?**
+
+* Use the expert opinion of a project manager to select the relative cost for all users
+* **Automatically collect information about how often each user accesses his/her Junk Email folder to infer preferences**
+* Survey a random sample of users to measure their preferences
+* Survey all users to measure their preferences
+
+Explanation
+
+While using expert opinion is practical, it is not personalized (we would use the same cost for all users). Likewise, a random sample of user preferences doesn't enable personalized costs for each user.
+
+While a survey of all users would enable personalization, it is impractical to obtain survey results from all or most of the users.
+
+While it's impractical to survey all users, it is easy to automatically collect their usage patterns. This could enable us to select higher regression thresholds for users who rarely check their Junk Email folder but lower thresholds for users who regularly check the folder.
+
+## Problem 6.1 - Integrating Word Count Information
+
+While we have thus far mostly dealt with frequencies of specific words in our analysis, we can extract other information from text. The last two sections of this problem will deal with two other types of information we can extract.
+
+First, we will use the number of words in the each email as an independent variable. We can use the original document term matrix called dtm for this task. The document term matrix has documents (in this case, emails) as its rows, terms (in this case word stems) as its columns, and frequencies as its values. As a result, the sum of all the elements in a row of the document term matrix is equal to the number of terms present in the document corresponding to the row. Obtain the word counts for each email with the command:
+
+```{r}
+wordCount = rowSums(as.matrix(dtm))
+```
+
+IMPORTANT NOTE: If you received an error message when running the command above, it might be because your computer ran out of memory when trying to convert dtm to a matrix. If this happened to you, try running the following lines of code instead to create wordCount (if you didn't get an error, you don't need to run these lines). This code is a little more cryptic, but is more memory efficient.
+
+library(slam)
+
+wordCount = rollup(dtm, 2, FUN=sum)$v
+
+When you have successfully created wordCount, answer the following question.
+
+**What would have occurred if we had instead created wordCount using spdtm instead of dtm?**
+
+* wordCount would have only counted some of the words and it would have only returned a result for some of the emails
+* wordCount would have counted all of the words, but would have only returned a result for some the emails
+* **wordCount would have only counted some of the words, but would have returned a result for all the emails**
+* wordCount would have counted all the words and it would have returned a result for all the emails
+
+Explanation
+
+spdtm has had sparse terms removed, which means we have removed some of the columns but none of the rows from dtm. This means rowSums will still return a sum for each row (one for each email), but it will not have counted the frequencies of any uncommon words in the dataset. As a result, wordCount will only count some of the words.
+
+## Problem 6.2 - Integrating Word Count Information
+
+Use the hist() function to plot the distribution of wordCount in the dataset. **What best describes the distribution of the data?**
+
+* **The data is skew right -- there are a large number of small wordCount values and a small number of large values.**
+* The data is not skewed -- there are roughly the same number of unusually large and unusually small wordCount values.
+* The data is skew left -- there are a large number of large wordCount values and a small number of small values.
+
+Explanation
+
+From hist(wordCount), nearly all the observations are in the very left of the graph, representing small values. Therefore, this distribution is skew right.
+
+```{r}
+hist(wordCount)
+```
+
+## Problem 6.3 - Integrating Word Count Information
+
+Now, use the hist() function to plot the distribution of log(wordCount) in the dataset. **What best describes the distribution of the data?**
+
+* The data is skew right -- there are a large number of small log(wordCount) values and a small number of large values.
+* **The data is not skewed -- there are roughly the same number of unusually large and unusually small log(wordCount) values.**
+* The data is skew left -- there are a large number of large log(wordCount) values and a small number of small values.
+
+Explanation
+
+From hist(log(wordCount)), the frequencies are quite balanced, suggesting log(wordCount) is not skewed.
+
+```{r}
+hist(log(wordCount))
+```
+
+## Problem 6.4 - Integrating Word Count Information
+
+Create a variable called logWordCount in emailsSparse that is equal to log(wordCount). Use the boxplot() command to plot logWordCount against whether a message is spam. 
+
+```{r}
+emailsSparse$logWordCount = log(wordCount)
+boxplot(emailsSparse$logWordCount ~ emailsSparse$spam)
+```
+
+**Which of the following best describes the box plot?**
+
+* logWordCount is much smaller in spam messages than in ham messages
+* **logWordCount is slightly smaller in spam messages than in ham messages**
+* logWordCount is slightly larger in spam messages than in ham messages
+* logWordCount is much higher in spam messages than in ham messages
+
+Explanation
+
+We can see that the 1st quartile, median, and 3rd quartiles are all slightly lower for spam messages than for ham messages.
+
+## Problem 6.5 - Integrating Word Count Information
+
+Because logWordCount differs between spam and ham messages, we hypothesize that it might be useful in predicting whether an email is spam. Take the following steps:
+
+1) Use the same sample.split output you obtained earlier (do not re-run sample.split) to split emailsSparse into a training and testing set, which you should call spamTrain2 and spamTest2.
+
+2) Use spamTrain2 to train a CART tree with the default parameters, saving the model to the variable spam2CART.
+
+3) Use spamTrain2 to train a random forest with the default parameters, saving the model to the variable spam2RF. Again, set the random seed to 123 directly before training spam2RF.
+
+```{r}
+spamTrain2 = subset(emailsSparse, split==TRUE)
+spamTest2 = subset(emailsSparse, split==FALSE)
+library(rpart)
+library(rpart.plot)
+spam2CART = rpart(spam ~ ., data=spamTrain2, method="class")
+library(randomForest)
+set.seed(123)
+spam2RF = randomForest(spam ~ ., data=spamTrain2)
+prp(spam2CART)
+```
+
+**Was the new variable used in the new CART tree spam2CART?**
+
+* **Yes**
+* No
+
+Explanation
+
+From prp(spam2CART), we see that the logWordCount was integrated into the tree (it might only display as "logWord", because prp shortens some of the variable names when it outputs them).
+
+## Problem 6.6 - Integrating Word Count Information
+
+Perform test-set predictions using the new CART and random forest models.
+
+**What is the test-set accuracy of spam2CART, using threshold 0.5 for predicting an email is spam?
+0.9301513
+**
+
+```{r}
+predSpam2CART = predict(spam2CART, newdata=spamTest2)
+predSpam2CART = predSpam2CART[,2]
+table(spamTest2$spam, predSpam2CART)
+(1214 + 384) / (1214 + 94 + 26 + 384)
+```
+
+## Problem 6.7 - Integrating Word Count Information
+
+**What is the test-set AUC of spam2CART?
+0.9582438
+**
+
+```{r}
+library(ROCR)
+spam2CARTROCR = prediction(predSpam2CART, spamTest2$spam)
+as.numeric(performance(spam2CARTROCR, "auc")@y.values)
+```
+
+## Problem 6.8 - Integrating Word Count Information
+
+**What is the test-set accuracy of spam2RF, using a threshold of 0.5 for predicting if an email is spam?** (Remember that you might get a different accuracy than us even if you set the seed, due to the random behavior of randomForest on some operating systems.)
+
+**0.9720605**
+
+```{r}
+predSpam2RF = predict(spam2RF, newdata=spamTest2)
+table(spamTest2$spam, predSpam2RF >0.5)
+(1285+385) / (1285 + 23 + 25 +385)
+```
+
+## Problem 6.9 - Integrating Word Count Information
+
+**What is the test-set AUC of spam2RF?** (Remember that you might get a different AUC than us even if you set the seed when building your model, due to the random behavior of randomForest on some operating systems.)
+
+**0.9980905**
+
+Explanation
+
+In this case, adding the logWordCounts variable did not result in improved results on the test set for the CART or random forest model.
+
+```{r}
+library(ROCR)
+spam2RFROCR = prediction(predSpam2RF, spamTest2$spam)
+as.numeric(performance(spam2RFROCR, "auc")@y.values)
+```
+
+##Using n-grams
+
+Another source of information that might be extracted from text is the frequency of various n-grams. An n-gram is a sequence of n consecutive words in the document. For instance, for the document "Text analytics rocks!", which we would preprocess to "text analyt rock", the 1-grams are "text", "analyt", and "rock", the 2-grams are "text analyt" and "analyt rock", and the only 3-gram is "text analyt rock". n-grams are order-specific, meaning the 2-grams "text analyt" and "analyt text" are considered two separate n-grams. We can see that so far our analysis has been extracting only 1-grams.
+
+If you are interested in learning more, the "RTextTools", "tau", "RWeka", and "textcat" packages in R are all good resources.

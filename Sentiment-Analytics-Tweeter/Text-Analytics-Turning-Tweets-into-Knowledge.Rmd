@@ -1,0 +1,176 @@
+---
+title: 'Text Analytics: Turning Tweets into Knowledge'
+author: "Datta K"
+output: html_document
+---
+
+##Sentiment Analysis
+
+CompanyX wants to know how people feel about them over time and how they receive new announcments. People sentiment (postive or negative) and can be found out by analysing twitter data. 
+
+## Tweets data
+
+We will use the dataset dtweets.csv. It has 1181 observations (rows) and 2 variables (columns):
+
+* Tweet: Text of the tweet
+* Avg: Average sentiment score
+
+
+```{r}
+tweets = read.csv("dtweets.csv", stringsAsFactors=FALSE)
+nrow(tweets)
+ncol(tweets)
+```
+
+We are interested in negative or positive sentiment. So Let's create a new variable Negative and set it's boolean value as TRUE if average sentiment score is <= -1 and FALSE if score is > -1
+
+```{r}
+tweets$Negative = as.factor(tweets$Avg <= -1)
+#str(tweets)
+table(tweets$Negative)
+```
+
+##Install and load required text mininng packages
+
+We need to install tm (text mining) package and it's dependant SnowballC package.
+
+```{r}
+#install.packages("tm")
+library(tm)
+#install.packages("SnowballC")
+library(SnowballC)
+```
+
+##Build a corpus (collection of documents)
+
+```{r}
+corpus = Corpus(VectorSource(tweets$Tweet))
+corpus
+corpus[[1]]$content
+#Convert corpus to plain text to support latest function changes
+#corpus = tm_map(corpus, PlainTextDocument)
+#Set locate to United States English
+Sys.setlocale("LC_ALL", "C")
+```
+
+##Pre-processing 
+
+Convery to lowercase, remove punctuations, remvoe stop words, stemmming (remove ed, er etc)
+
+```{r}
+#corpus = tm_map(corpus, tolower)
+corpus = tm_map(corpus, content_transformer(tolower))
+corpus[[1]]$content
+corpus = tm_map(corpus, removePunctuation)
+corpus[[1]]$content
+corpus = tm_map(corpus, removeWords, c("companyx", stopwords("english")))
+corpus[[1]]$content
+corpus = tm_map(corpus, stemDocument)
+corpus[[1]]$content
+```
+
+##Quick Question
+
+Given a corpus in R, how many commands do you need to run in R to clean up the irregularities (removing capital letters and punctuation)?
+2
+
+How many commands do you need to run to stem the document?
+1
+
+
+##Bag of Words in R
+
+Build document term frequency matrix and then convert it to R data frame to be user for predictive modelling.
+
+```{r}
+#Build term frequency matrix
+frequencies = DocumentTermMatrix(corpus)
+frequencies
+#Check entries
+##inspect(frequencies[1000:1005, 505:515])
+#Check terms which appear 20 times or more
+##findFreqTerms(frequencies, lowfreq = 20)
+#Remove words which appear less frequent, less than 5% 
+sparse = removeSparseTerms(frequencies, 0.995)
+sparse
+#Convert sparse matrix to data frame to be used in predictive modelling
+tweetSparse = as.data.frame(as.matrix(sparse))
+#Convert variable names to appropriate (not starting with integer etc) column names
+colnames(tweetSparse) = make.names(colnames(tweetSparse))
+#Add dependent variable to dataset
+tweetSparse$Negative = tweets$Negative
+#tweetSparse[1:2,]
+```
+
+##Split data in training and test sets for analysis
+
+```{r}
+library(caTools)
+set.seed(123)
+split = sample.split(tweetSparse$Negative, SplitRatio = 0.7)
+trainSparse = subset(tweetSparse, split==TRUE)
+testSparse = subset(tweetSparse, split==FALSE)
+nrow(trainSparse)
+nrow(testSparse)
+```
+
+
+## Predicting Sentiment
+
+**Use cart model, test and check accuracy**
+
+```{r}
+library(rpart)
+library(rpart.plot)
+tweetCART = rpart(Negative ~ ., data=trainSparse, method="class" )
+prp(tweetCART)
+predictCART = predict(tweetCART, newdata=testSparse, type="class")
+table(testSparse$Negative, predictCART)
+#Accuracy
+(294+18) / (294+6+37+18)
+#Accuracy of baseline model
+table(testSparse$Negative)
+300 / (300+55)
+```
+
+
+**Build random forest model, test and check accuracy**
+
+```{r}
+library(randomForest)
+set.seed(123)
+tweetRF = randomForest(Negative ~ ., data=trainSparse)
+predictRF = predict(tweetRF, newdata=testSparse)
+table(testSparse$Negative, predictRF)
+(293 + 21) / (293+7+34+21)
+```
+
+## Quick Question
+
+Let's see how well logistic regression does. Build a logistic regression model (using the training set) to predict "Negative" using all of the independent variables. You may get a warning message after building your model - don't worry (we explain what it means in the explanation).
+
+Now, make predictions using the logistic regression model:
+
+predictions = predict(tweetLogReg, newdata=testSparse, type="response")
+
+where "tweetLogReg" should be the name of your logistic regression model. You might also get a warning message after this command, but don't worry - it is due to the same problem as the previous warning message.
+
+Build a confusion matrix (with a threshold of 0.5) and compute the accuracy of the model. 
+
+**
+What is the accuracy?
+0.8197183
+**
+
+```{r}
+tweetLogReg = glm(Negative ~ ., data=trainSparse, family="binomial")
+predictLogReg = predict(tweetLogReg, newdata=testSparse, type="response")
+table(testSparse$Negative, predictLogReg > 0.5)
+(253+33) / (253+47+22+33)
+```
+
+Explanation
+
+The accuracy is worse than the baseline. If you were to compute the accuracy on the training set instead, you would see that the model does really well on the training set - this is an example of over-fitting. The model fits the training set really well, but does not perform well on the test set. A logistic regression model with a large number of variables is particularly at risk for overfitting.
+
+Note that you might have gotten a different answer than us, because the glm function struggles with this many variables. The warning messages that you might have seen in this problem have to do with the number of variables, and the fact that the model is overfitting to the training set. 
