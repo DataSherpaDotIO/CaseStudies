@@ -1,5 +1,5 @@
 ---
-title: "Stock dynamics"
+title: "Stock Market Dynamics"
 author: "Datta K"
 output: html_document
 ---
