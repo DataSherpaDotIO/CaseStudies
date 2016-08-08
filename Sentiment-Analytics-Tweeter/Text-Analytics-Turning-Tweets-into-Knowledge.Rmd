@@ -4,13 +4,13 @@ author: "Datta K"
 output: html_document
 ---
 
-##Sentiment Analysis
+##Sentiment Analysis for CompanyX
 
 CompanyX wants to know how people feel about them over time and how they receive new announcments. People sentiment (postive or negative) and can be found out by analysing twitter data. 
 
 ## Tweets data
 
-We will use the dataset dtweets.csv. It has 1181 observations (rows) and 2 variables (columns):
+We will use the dataset dtweets.csv (dummy tweets). It has 1181 observations (rows) and 2 variables (columns):
 
 * Tweet: Text of the tweet
 * Avg: Average sentiment score

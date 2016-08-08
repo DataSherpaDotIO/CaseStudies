@@ -66,13 +66,13 @@ img {
 </div>
 
 
-<div id="sentiment-analysis" class="section level2">
-<h2>Sentiment Analysis</h2>
+<div id="sentiment-analysis-for-companyx" class="section level2">
+<h2>Sentiment Analysis for CompanyX</h2>
 <p>CompanyX wants to know how people feel about them over time and how they receive new announcments. People sentiment (postive or negative) and can be found out by analysing twitter data.</p>
 </div>
 <div id="tweets-data" class="section level2">
 <h2>Tweets data</h2>
-<p>We will use the dataset dtweets.csv. It has 1181 observations (rows) and 2 variables (columns):</p>
+<p>We will use the dataset dtweets.csv (dummy tweets). It has 1181 observations (rows) and 2 variables (columns):</p>
 <ul>
 <li>Tweet: Text of the tweet</li>
 <li>Avg: Average sentiment score</li>
@@ -110,7 +110,7 @@ corpus</code></pre>
 ## Metadata:  corpus specific: 0, document level (indexed): 0
 ## Content:  documents: 1181</code></pre>
 <pre class="r"><code>corpus[[1]]$content</code></pre>
-<pre><code>## [1] &quot;Dummy tweet: I have to say, CompanyX has by far the best customer care service I have ever received! @CompanyX @CompanyX&quot;</code></pre>
+<pre><code>## [1] &quot;CompanyX has by far the best customer care service I have ever received! @CompanyX @CompanyX&quot;</code></pre>
 <pre class="r"><code>#Convert corpus to plain text to support latest function changes
 #corpus = tm_map(corpus, PlainTextDocument)
 #Set locate to United States English
@@ -123,16 +123,16 @@ Sys.setlocale(&quot;LC_ALL&quot;, &quot;C&quot;)</code></pre>
 <pre class="r"><code>#corpus = tm_map(corpus, tolower)
 corpus = tm_map(corpus, content_transformer(tolower))
 corpus[[1]]$content</code></pre>
-<pre><code>## [1] &quot;dummy tweet: i have to say, companyx has by far the best customer care service i have ever received! @companyx @companyx&quot;</code></pre>
+<pre><code>## [1] &quot;companyx has by far the best customer care service i have ever received! @companyx @companyx&quot;</code></pre>
 <pre class="r"><code>corpus = tm_map(corpus, removePunctuation)
 corpus[[1]]$content</code></pre>
-<pre><code>## [1] &quot;dummy tweet i have to say companyx has by far the best customer care service i have ever received companyx companyx&quot;</code></pre>
+<pre><code>## [1] &quot;companyx has by far the best customer care service i have ever received companyx companyx&quot;</code></pre>
 <pre class="r"><code>corpus = tm_map(corpus, removeWords, c(&quot;companyx&quot;, stopwords(&quot;english&quot;)))
 corpus[[1]]$content</code></pre>
-<pre><code>## [1] &quot;dummy tweet    say    far  best customer care service   ever received  &quot;</code></pre>
+<pre><code>## [1] &quot;   far  best customer care service   ever received  &quot;</code></pre>
 <pre class="r"><code>corpus = tm_map(corpus, stemDocument)
 corpus[[1]]$content</code></pre>
-<pre><code>## [1] &quot;dummi tweet    say    far  best custom care servic   ever receiv &quot;</code></pre>
+<pre><code>## [1] &quot;   far  best custom care servic   ever receiv &quot;</code></pre>
 </div>
 <div id="quick-question" class="section level2">
 <h2>Quick Question</h2>
@@ -145,8 +145,8 @@ corpus[[1]]$content</code></pre>
 <pre class="r"><code>#Build term frequency matrix
 frequencies = DocumentTermMatrix(corpus)
 frequencies</code></pre>
-<pre><code>## &lt;&lt;DocumentTermMatrix (documents: 1181, terms: 3290)&gt;&gt;
-## Non-/sparse entries: 10123/3875367
+<pre><code>## &lt;&lt;DocumentTermMatrix (documents: 1181, terms: 3289)&gt;&gt;
+## Non-/sparse entries: 10120/3874189
 ## Sparsity           : 100%
 ## Maximal term length: 115
 ## Weighting          : term frequency (tf)</code></pre>
@@ -158,7 +158,7 @@ frequencies</code></pre>
 sparse = removeSparseTerms(frequencies, 0.995)
 sparse</code></pre>
 <pre><code>## &lt;&lt;DocumentTermMatrix (documents: 1181, terms: 309)&gt;&gt;
-## Non-/sparse entries: 5810/359119
+## Non-/sparse entries: 5809/359120
 ## Sparsity           : 98%
 ## Maximal term length: 20
 ## Weighting          : term frequency (tf)</code></pre>
@@ -218,8 +218,8 @@ predictRF = predict(tweetRF, newdata=testSparse)
 table(testSparse$Negative, predictRF)</code></pre>
 <pre><code>##        predictRF
 ##         FALSE TRUE
-##   FALSE   293    7
-##   TRUE     32   23</code></pre>
+##   FALSE   292    8
+##   TRUE     33   22</code></pre>
 <pre class="r"><code>(293 + 21) / (293+7+34+21)</code></pre>
 <pre><code>## [1] 0.884507</code></pre>
 </div>
@@ -239,8 +239,8 @@ table(testSparse$Negative, predictRF)</code></pre>
 <pre class="r"><code>table(testSparse$Negative, predictLogReg &gt; 0.5)</code></pre>
 <pre><code>##        
 ##         FALSE TRUE
-##   FALSE   238   62
-##   TRUE     31   24</code></pre>
+##   FALSE   257   43
+##   TRUE     25   30</code></pre>
 <pre class="r"><code>(253+33) / (253+47+22+33)</code></pre>
 <pre><code>## [1] 0.8056338</code></pre>
 <p>Explanation</p>
